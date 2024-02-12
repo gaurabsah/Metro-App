@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import com.app.dto.FareRequest;
+import com.app.dto.FareResponse;
 import com.app.dto.MetroCardDto;
 import com.app.exception.ResourcesNotFoundException;
 import com.app.model.MetroCard;

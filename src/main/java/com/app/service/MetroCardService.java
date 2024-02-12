@@ -25,9 +25,7 @@ public interface MetroCardService {
 //	view travel history
 
 //	scanning (check-in)
-	
+
 //	scanning (check-out)
-	
-//	show fares
 
 }
