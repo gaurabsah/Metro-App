@@ -9,11 +9,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import com.app.dto.FareRequest;
-import com.app.dto.FareResponse;
+import com.app.dto.CheckInDto;
+import com.app.dto.CheckOutDto;
 import com.app.dto.MetroCardDto;
 import com.app.exception.ResourcesNotFoundException;
+import com.app.model.CheckIn;
+import com.app.model.CheckOut;
+import com.app.model.Fare;
 import com.app.model.MetroCard;
+import com.app.repository.CheckInRepository;
+import com.app.repository.CheckOutRepository;
+import com.app.repository.FareRepository;
 import com.app.repository.MetroCardRepository;
 import com.app.service.MetroCardService;
 import com.app.utils.AccountInfo;
@@ -28,6 +34,15 @@ public class MetroCardServiceImpl implements MetroCardService {
 
 	@Autowired
 	private MetroCardRepository metroCardRepository;
+	
+	@Autowired
+	private FareRepository fareRepository;
+	
+	@Autowired
+	private CheckInRepository checkInRepository;
+	
+	@Autowired
+	private CheckOutRepository checkOutRepository;
 
 	@Autowired
 	private ModelMapper modelMapper;
@@ -40,7 +55,7 @@ public class MetroCardServiceImpl implements MetroCardService {
 		card.setActive(true);
 		card.setCardNumber(UUID.randomUUID().toString());
 //		initial balance 0
-		card.setBalance("0");
+		card.setBalance(0.0);
 		log.info("Saving Metro Details...");
 		MetroCard metroCard = metroCardRepository.save(card);
 		return modelMapper.map(metroCard, MetroCardDto.class);
@@ -118,6 +133,41 @@ public class MetroCardServiceImpl implements MetroCardService {
 						.build()
 						)
 				.build();
+	}
+
+	@Override
+	public CheckInDto checkIn(String cardNum, String sourceLoc) {
+		log.info("Inside checkIn()...");
+		log.info("Finding the location...");
+		Fare findBySourceLoc = fareRepository.findBySourceLoc(sourceLoc);
+		log.info("Finding the Card Details...");
+		MetroCard card = metroCardRepository.findByCardNumber(cardNum);
+		CheckIn checkIn = new CheckIn();
+		checkIn.setSourceLocation(findBySourceLoc.getSourceLoc());
+		checkIn.setTotalBalance(card.getBalance());
+		log.info("Saving the CheckIn Details in DB...");
+		CheckIn scanning = checkInRepository.save(checkIn);
+		return modelMapper.map(scanning, CheckInDto.class);
+	}
+
+	@Override
+	public CheckOutDto checkOut(String cardNum, String sourceLoc, String destinationLoc) {
+		log.info("Inside checkOut()...");
+		log.info("Finding the Card Details...");
+		MetroCard card = metroCardRepository.findByCardNumber(cardNum);
+		log.info("Finding the location...");
+		Fare findBySourceLocAndDestinationLoc = fareRepository.findBySourceLocAndDestinationLoc(sourceLoc, destinationLoc);
+		CheckOut checkOut = new CheckOut();
+		checkOut.setSourceLocation(sourceLoc);
+		checkOut.setDestinationLocation(destinationLoc);
+		checkOut.setDeductedAmount(findBySourceLocAndDestinationLoc.getAmount());
+		checkOut.setRemainingBalance(card.getBalance()-findBySourceLocAndDestinationLoc.getAmount());
+		log.info("Saving the CheckOut Details in DB...");
+		CheckOut scanningOut = checkOutRepository.save(checkOut);
+		log.info("Updating the updated smount in Card DB...");
+		card.setBalance(scanningOut.getRemainingBalance());
+		metroCardRepository.save(card);
+		return modelMapper.map(scanningOut, CheckOutDto.class);
 	}
 
 }

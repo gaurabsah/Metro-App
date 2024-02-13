@@ -101,7 +101,7 @@ public class FareServiceImpl implements FareService {
 		
 		log.info("If present then...");
 		log.info("Get the source Location from DB...");
-		List<Fare> sourLoc = fareRepository.findBySourceLoc(source);
+		Fare sourLoc = fareRepository.findBySourceLoc(source);
 		
 		log.info("checking if Destination Location is present in DB or not");
 		Boolean destinationLoc = fareRepository.existsByDestinationLoc(destination);
@@ -127,7 +127,7 @@ public class FareServiceImpl implements FareService {
 		
 		log.info("If present then...");
 		log.info("Get the source Location from DB...");
-		List<Fare> desLoc = fareRepository.findByDestinationLoc(destination);
+		Fare desLoc = fareRepository.findByDestinationLoc(destination);
 		
 		log.info("Get Fare Detail using Source & Destination Location For Fare amount...");
 		Fare fare = fareRepository.findBySourceLocAndDestinationLoc(source, destination);

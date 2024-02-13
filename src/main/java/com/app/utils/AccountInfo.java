@@ -1,7 +1,5 @@
 package com.app.utils;
 
-import java.math.BigDecimal;
-
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,6 +9,6 @@ public class AccountInfo {
 
 	private String accountName;
 	private String accountNumber;
-	private String accountBalance;
+	private double accountBalance;
 
 }

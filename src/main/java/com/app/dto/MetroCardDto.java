@@ -9,7 +9,7 @@ public class MetroCardDto {
 
 	private String cardNumber;
 
-	private String balance;
+	private double balance;
 
 	private boolean isActive;
 
