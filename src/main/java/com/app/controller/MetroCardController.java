@@ -1,6 +1,7 @@
 package com.app.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,9 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.app.dto.CheckInDto;
-import com.app.dto.CheckOutDto;
 import com.app.dto.MetroCardDto;
+import com.app.dto.TravelHistoryDto;
 import com.app.service.MetroCardService;
 import com.app.utils.AppResponse;
 
@@ -64,17 +64,16 @@ public class MetroCardController {
 		return new ResponseEntity<>(balanceEnquiry, HttpStatus.OK);
 	}
 
-	@GetMapping("/check-in")
-	public ResponseEntity<CheckInDto> checkIn(@RequestParam String cardNum, @RequestParam String sourceLoc) {
-		CheckInDto checkIn = cardService.checkIn(cardNum, sourceLoc);
-		return new ResponseEntity<>(checkIn, HttpStatus.OK);
+	@GetMapping("/travel")
+	public ResponseEntity<List<TravelHistoryDto>> travelHistory(@RequestParam String cardNum) {
+		List<TravelHistoryDto> travelHistory = cardService.getTravelHistory(cardNum);
+		return new ResponseEntity<>(travelHistory, HttpStatus.OK);
 	}
 
-	@GetMapping("/check-out")
-	public ResponseEntity<CheckOutDto> checkOut(@RequestParam String cardNum, @RequestParam String sourceLoc,
+	@GetMapping("/checkInOut")
+	public ResponseEntity<Map<String, Object>> checkInOut(@RequestParam String cardNum, @RequestParam String sourceLoc,
 			@RequestParam String destinationLoc) {
-		CheckOutDto checkOut = cardService.checkOut(cardNum, sourceLoc, destinationLoc);
-		return new ResponseEntity<>(checkOut, HttpStatus.OK);
+		Map<String, Object> checkInOut = cardService.checkInOut(cardNum, sourceLoc, destinationLoc);
+		return new ResponseEntity<>(checkInOut, HttpStatus.OK);
 	}
-
 }

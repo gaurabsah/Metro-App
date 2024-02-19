@@ -1,6 +1,8 @@
 package com.app.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -12,15 +14,14 @@ import org.springframework.stereotype.Service;
 import com.app.dto.CheckInDto;
 import com.app.dto.CheckOutDto;
 import com.app.dto.MetroCardDto;
+import com.app.dto.TravelHistoryDto;
 import com.app.exception.ResourcesNotFoundException;
-import com.app.model.CheckIn;
-import com.app.model.CheckOut;
 import com.app.model.Fare;
 import com.app.model.MetroCard;
-import com.app.repository.CheckInRepository;
-import com.app.repository.CheckOutRepository;
+import com.app.model.TravelHistory;
 import com.app.repository.FareRepository;
 import com.app.repository.MetroCardRepository;
+import com.app.repository.TravelHistoryRepository;
 import com.app.service.MetroCardService;
 import com.app.utils.AccountInfo;
 import com.app.utils.AppConstants;
@@ -38,11 +39,9 @@ public class MetroCardServiceImpl implements MetroCardService {
 	@Autowired
 	private FareRepository fareRepository;
 	
-	@Autowired
-	private CheckInRepository checkInRepository;
 	
 	@Autowired
-	private CheckOutRepository checkOutRepository;
+	private TravelHistoryRepository travelHistoryRepository;
 
 	@Autowired
 	private ModelMapper modelMapper;
@@ -136,38 +135,102 @@ public class MetroCardServiceImpl implements MetroCardService {
 	}
 
 	@Override
-	public CheckInDto checkIn(String cardNum, String sourceLoc) {
-		log.info("Inside checkIn()...");
-		log.info("Finding the location...");
-		Fare findBySourceLoc = fareRepository.findBySourceLoc(sourceLoc);
+	public Map<String, Object> checkInOut(String cardNumber, String sourceLoc, String destinationLoc) {
+		
+		log.info("Inside checkInOut()...");
+		Map<String, Object> map = new HashMap<>();
+		
 		log.info("Finding the Card Details...");
-		MetroCard card = metroCardRepository.findByCardNumber(cardNum);
-		CheckIn checkIn = new CheckIn();
-		checkIn.setSourceLocation(findBySourceLoc.getSourceLoc());
-		checkIn.setTotalBalance(card.getBalance());
-		log.info("Saving the CheckIn Details in DB...");
-		CheckIn scanning = checkInRepository.save(checkIn);
-		return modelMapper.map(scanning, CheckInDto.class);
+		MetroCard card = metroCardRepository.findByCardNumber(cardNumber);
+		
+		if (card != null && !card.isCheckedIn()) {
+			
+//			check if destination location is present in DB
+			
+			Boolean existsBySourceLoc = fareRepository.existsBySourceLoc(sourceLoc);
+			
+			if(!existsBySourceLoc) {
+				throw new ResourcesNotFoundException(sourceLoc + " Location Not Found!!!");
+			}
+			
+//			log.info("Finding the fare details using location...");
+//			Fare fare = fareRepository.findBySourceLoc(sourceLoc);
+//			
+//			
+//			if(fare.getSourceLoc() != sourceLoc) {
+//				throw new ResourcesNotFoundException(sourceLoc + " Location Not Found!!!");
+//			}
+			
+			card.setCheckedIn(true);
+			
+			MetroCard metroCard = metroCardRepository.save(card);
+			
+			CheckInDto checkInDto = CheckInDto.builder()
+			.sourceLocation(sourceLoc)
+			.totalBalance(metroCard.getBalance())
+			.build();
+			
+			map.put("check-in details", checkInDto);
+			
+		}
+		
+		else if (cardNumber != null && card.isCheckedIn()) {
+			
+//			check if destination location is present in DB
+			
+			Boolean existsByDestinationLoc = fareRepository.existsByDestinationLoc(destinationLoc);
+			
+			if(!existsByDestinationLoc) {
+				throw new ResourcesNotFoundException(destinationLoc + " Location Not Found!!!");
+			}
+			
+//			log.info("Finding the fare detail using location...");
+//			Fare fareDetail = fareRepository.findByDestinationLoc(destinationLoc);
+			
+			
+			log.info("Finding the fare amount using source and destination location...");
+			Fare fareAmount = fareRepository.findBySourceLocAndDestinationLoc(sourceLoc, destinationLoc);
+			
+			card.setCheckedIn(false);
+			
+			
+			CheckOutDto checkOutDto = CheckOutDto.builder()
+			.sourceLocation(sourceLoc)
+			.destinationLocation(destinationLoc)
+			.deductedAmount(fareAmount.getAmount())
+			.remainingBalance(card.getBalance() - fareAmount.getAmount())
+			.build();
+			
+			
+			card.setBalance(checkOutDto.getRemainingBalance());
+			MetroCard metroCard = metroCardRepository.save(card);
+			
+//			saving travel location to travel history DB
+			
+			TravelHistory history = new TravelHistory();
+			history.setAmount(checkOutDto.getDeductedAmount());
+			history.setDestinationLoc(destinationLoc);
+			history.setSourceLoc(sourceLoc);
+			history.setDistance(fareAmount.getDistanceBetw());
+			history.setMetroCard(metroCard);
+			
+			travelHistoryRepository.save(history);
+			
+			map.put("Check-Out Details", checkOutDto);
+			
+			
+			 
+		}
+		
+		
+		return map;
 	}
 
 	@Override
-	public CheckOutDto checkOut(String cardNum, String sourceLoc, String destinationLoc) {
-		log.info("Inside checkOut()...");
-		log.info("Finding the Card Details...");
-		MetroCard card = metroCardRepository.findByCardNumber(cardNum);
-		log.info("Finding the location...");
-		Fare findBySourceLocAndDestinationLoc = fareRepository.findBySourceLocAndDestinationLoc(sourceLoc, destinationLoc);
-		CheckOut checkOut = new CheckOut();
-		checkOut.setSourceLocation(sourceLoc);
-		checkOut.setDestinationLocation(destinationLoc);
-		checkOut.setDeductedAmount(findBySourceLocAndDestinationLoc.getAmount());
-		checkOut.setRemainingBalance(card.getBalance()-findBySourceLocAndDestinationLoc.getAmount());
-		log.info("Saving the CheckOut Details in DB...");
-		CheckOut scanningOut = checkOutRepository.save(checkOut);
-		log.info("Updating the updated smount in Card DB...");
-		card.setBalance(scanningOut.getRemainingBalance());
-		metroCardRepository.save(card);
-		return modelMapper.map(scanningOut, CheckOutDto.class);
+	public List<TravelHistoryDto> getTravelHistory(String cardNumber) {
+		List<TravelHistory> findByMetroCardCardNumber = travelHistoryRepository.findByMetroCardCardNumber(cardNumber);
+		List<TravelHistoryDto> list = findByMetroCardCardNumber.stream().map(h->modelMapper.map(h, TravelHistoryDto.class)).collect(Collectors.toList());
+		return list;
 	}
 
 }

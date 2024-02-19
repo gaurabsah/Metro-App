@@ -1,10 +1,10 @@
 package com.app.service;
 
 import java.util.List;
+import java.util.Map;
 
-import com.app.dto.CheckInDto;
-import com.app.dto.CheckOutDto;
 import com.app.dto.MetroCardDto;
+import com.app.dto.TravelHistoryDto;
 import com.app.utils.AppResponse;
 
 public interface MetroCardService {
@@ -25,11 +25,14 @@ public interface MetroCardService {
 	AppResponse balanceEnquiry(String cardNumber);
 
 //	view travel history
+	List<TravelHistoryDto> getTravelHistory(String cardNumber);
 
-//	scanning (check-in)
-	CheckInDto checkIn(String cardNum, String sourceLoc);
 
-//	scanning (check-out)
-	CheckOutDto checkOut(String cardNum, String sourceLoc, String destinationLoc);
+	/*
+	 * scanning (check-in)
+	 * scanning (check-out)
+	 */
+
+	Map<String, Object> checkInOut(String cardNumber, String sourceLoc, String destinationLoc);
 
 }

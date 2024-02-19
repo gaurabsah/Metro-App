@@ -12,5 +12,7 @@ public class MetroCardDto {
 	private double balance;
 
 	private boolean isActive;
+	
+	private boolean checkedIn;
 
 }
