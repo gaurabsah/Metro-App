@@ -72,7 +72,7 @@ public class MetroCardController {
 
 	@GetMapping("/checkInOut")
 	public ResponseEntity<Map<String, Object>> checkInOut(@RequestParam String cardNum, @RequestParam String sourceLoc,
-			@RequestParam String destinationLoc) {
+			@RequestParam(required = false) String destinationLoc) {
 		Map<String, Object> checkInOut = cardService.checkInOut(cardNum, sourceLoc, destinationLoc);
 		return new ResponseEntity<>(checkInOut, HttpStatus.OK);
 	}
