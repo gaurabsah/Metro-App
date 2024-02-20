@@ -17,7 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.app.dto.MetroCardDto;
+import com.app.dto.PaymentRequest;
+import com.app.dto.PaymentResponse;
 import com.app.dto.TravelHistoryDto;
+import com.app.model.Payment;
 import com.app.service.MetroCardService;
 import com.app.utils.AppResponse;
 
@@ -75,5 +78,17 @@ public class MetroCardController {
 			@RequestParam(required = false) String destinationLoc) {
 		Map<String, Object> checkInOut = cardService.checkInOut(cardNum, sourceLoc, destinationLoc);
 		return new ResponseEntity<>(checkInOut, HttpStatus.OK);
+	}
+
+	@PostMapping("/pay")
+	public ResponseEntity<PaymentResponse> payment(@RequestBody PaymentRequest paymentRequest) {
+		PaymentResponse topUp = cardService.topUp(paymentRequest);
+		return new ResponseEntity<>(topUp, HttpStatus.OK);
+	}
+
+	@GetMapping("/transactions")
+	public ResponseEntity<List<Payment>> getAllTransactions() {
+		List<Payment> allDetails = cardService.getAllTransactions();
+		return new ResponseEntity<>(allDetails, HttpStatus.OK);
 	}
 }

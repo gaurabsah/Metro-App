@@ -10,17 +10,23 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.app.dto.CheckInDto;
 import com.app.dto.CheckOutDto;
 import com.app.dto.MetroCardDto;
+import com.app.dto.PaymentRequest;
+import com.app.dto.PaymentResponse;
 import com.app.dto.TravelHistoryDto;
+import com.app.exception.PaymentException;
 import com.app.exception.ResourcesNotFoundException;
 import com.app.model.Fare;
 import com.app.model.MetroCard;
+import com.app.model.Payment;
 import com.app.model.TravelHistory;
 import com.app.repository.FareRepository;
 import com.app.repository.MetroCardRepository;
+import com.app.repository.PaymentRepository;
 import com.app.repository.TravelHistoryRepository;
 import com.app.service.MetroCardService;
 import com.app.utils.AccountInfo;
@@ -31,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@Transactional
 public class MetroCardServiceImpl implements MetroCardService {
 
 	@Autowired
@@ -42,6 +49,9 @@ public class MetroCardServiceImpl implements MetroCardService {
 	
 	@Autowired
 	private TravelHistoryRepository travelHistoryRepository;
+	
+	@Autowired
+	private PaymentRepository paymentRepository;
 
 	@Autowired
 	private ModelMapper modelMapper;
@@ -231,6 +241,44 @@ public class MetroCardServiceImpl implements MetroCardService {
 		List<TravelHistory> findByMetroCardCardNumber = travelHistoryRepository.findByMetroCardCardNumber(cardNumber);
 		List<TravelHistoryDto> list = findByMetroCardCardNumber.stream().map(h->modelMapper.map(h, TravelHistoryDto.class)).collect(Collectors.toList());
 		return list;
+	}
+
+	@Override
+	public PaymentResponse topUp(PaymentRequest paymentRequest) {
+		
+		String metroCardNumber = paymentRequest.getMetroCardNumber();
+		
+		MetroCard metroCard = metroCardRepository.findByCardNumber(metroCardNumber);
+		
+		if(metroCard == null) {
+			throw new ResourcesNotFoundException("Metro Card Not Found...");
+		}
+		
+		metroCard.setBalance(metroCard.getBalance() + paymentRequest.getAmount());
+		
+		metroCardRepository.save(metroCard);
+		
+		if(!paymentRequest.getType().equals("DEBIT")){
+            throw new PaymentException("Payment card type do not support");
+        }
+		
+		log.info("Saving Card Details in Payment");
+		paymentRequest.setMetroCardNumber(metroCardNumber);
+		Payment payment = modelMapper.map(paymentRequest, Payment.class);
+		Payment paymentDone = paymentRepository.save(payment);
+		
+		return PaymentResponse.builder()
+				.transactionId(paymentDone.getId())
+				.amount(paymentDone.getAmount())
+				.status("Completed")
+				.message("Transaction Completed")
+				.paidOn(paymentDone.getPaidOn())
+				.build();
+	}
+
+	@Override
+	public List<Payment> getAllTransactions() {
+		return paymentRepository.findAll(Sort.by("paidOn").descending());
 	}
 
 }

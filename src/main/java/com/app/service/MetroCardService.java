@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.app.dto.MetroCardDto;
+import com.app.dto.PaymentRequest;
+import com.app.dto.PaymentResponse;
 import com.app.dto.TravelHistoryDto;
+import com.app.model.Payment;
 import com.app.utils.AppResponse;
 
 public interface MetroCardService {
@@ -19,7 +22,11 @@ public interface MetroCardService {
 
 	void deleteDetails(String id);
 
-//	topup
+//	topUp
+	PaymentResponse topUp(PaymentRequest paymentRequest);
+	
+//	view all transactions
+	List<Payment> getAllTransactions();
 
 //	view balance
 	AppResponse balanceEnquiry(String cardNumber);
@@ -27,10 +34,8 @@ public interface MetroCardService {
 //	view travel history
 	List<TravelHistoryDto> getTravelHistory(String cardNumber);
 
-
 	/*
-	 * scanning (check-in)
-	 * scanning (check-out)
+	 * scanning (check-in) scanning (check-out)
 	 */
 
 	Map<String, Object> checkInOut(String cardNumber, String sourceLoc, String destinationLoc);
