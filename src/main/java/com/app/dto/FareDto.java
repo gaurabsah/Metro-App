@@ -18,5 +18,7 @@ public class FareDto {
 	private double distanceBetw;
 
 	private double amount;
+	
+	private String timeCovered;
 
 }

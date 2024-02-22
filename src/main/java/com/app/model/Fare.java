@@ -1,6 +1,5 @@
 package com.app.model;
 
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -21,5 +20,7 @@ public class Fare {
 	private double distanceBetw;
 
 	private double amount;
+
+	private String timeCovered;
 
 }
